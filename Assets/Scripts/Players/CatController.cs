@@ -1,80 +1,88 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class CatController : PlayerBase
 {
     [SerializeField]
     private bool isAIControlled = false;
-    
+
     private InputManager inputManager;
-    
+
     public bool IsAIControlled => isAIControlled;
-    
+
     protected override void Awake()
     {
         base.Awake();
         inputManager = InputManager.Instance;
-        
+
         if (spriteRenderer != null)
         {
-            spriteRenderer.color = Color.red;
+            //spriteRenderer.color = Color.red;
         }
     }
-    
+
     private void Update()
     {
-        // AI controlled; don't process player input
+        // If AI controlled, don't process player input
         if (isAIControlled)
         {
             return;
         }
-        
+
         // Only respond to input when it's the cat's turn and game is playing
         if (GameManager.Instance.IsMouseTurn || GameManager.Instance.GetGameState() != GameState.Playing)
         {
             return;
         }
-        
+
         HandleInput();
     }
-    
+
     // Handle keyboard input for the cat player
     private void HandleInput()
     {
+        Keyboard keyboard = Keyboard.current;
+
+        if (keyboard == null)
+            return;
+
         // Arrow key input
-        if (Input.GetKeyDown(KeyCode.UpArrow))
+        if (keyboard.upArrowKey.wasPressedThisFrame)
         {
             TryMoveInDirection(Vector2.up);
         }
-        else if (Input.GetKeyDown(KeyCode.LeftArrow))
+        else if (keyboard.leftArrowKey.wasPressedThisFrame)
         {
             TryMoveInDirection(Vector2.left);
         }
-        else if (Input.GetKeyDown(KeyCode.DownArrow))
+        else if (keyboard.downArrowKey.wasPressedThisFrame)
         {
             TryMoveInDirection(Vector2.down);
         }
-        else if (Input.GetKeyDown(KeyCode.RightArrow))
+        else if (keyboard.rightArrowKey.wasPressedThisFrame)
         {
             TryMoveInDirection(Vector2.right);
         }
-        
+
         // Mouse click input
-        if (Input.GetMouseButtonDown(0))
+        Mouse mouse = Mouse.current;
+        if (mouse != null && mouse.leftButton.wasPressedThisFrame)
         {
             HandleMouseClickInput();
         }
-        
+
         // Touch input
-        if (Input.touchCount > 0)
+        Touchscreen touchscreen = Touchscreen.current;
+        if (touchscreen != null && touchscreen.touches.Count > 0)
         {
-            Touch touch = Input.GetTouch(0);
-            if (touch.phase == TouchPhase.Began)
+            var touch = touchscreen.touches[0];
+            if (touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Began)
             {
-                HandleTouchInput(touch.position);
+                HandleTouchInput(touch.position.ReadValue());
             }
         }
     }
-    
+
     // Try to move in a direction based on keyboard input
     private void TryMoveInDirection(Vector2 direction)
     {
@@ -85,34 +93,34 @@ public class CatController : PlayerBase
             GameManager.Instance.EndTurn();
         }
     }
-    
+
     // Find the closest connected node in a given direction
     private Node FindNodeInDirection(Vector2 direction)
     {
         Node bestNode = null;
         float bestDot = -1f;
-        
+
         foreach (Node connectedNode in currentNode.GetConnectedNodes())
         {
             Vector2 directionToNode = (connectedNode.GetPosition() - currentNode.GetPosition()).normalized;
             float dot = Vector2.Dot(directionToNode, direction.normalized);
-            
+
             if (dot > bestDot)
             {
                 bestDot = dot;
                 bestNode = connectedNode;
             }
         }
-        
+
         return bestNode;
     }
-    
+
     // Handle mouse click input on nodes
     private void HandleMouseClickInput()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
-        
+
         if (hit.collider != null)
         {
             Node clickedNode = hit.collider.GetComponent<Node>();
@@ -123,13 +131,13 @@ public class CatController : PlayerBase
             }
         }
     }
-    
+
     // Handle touch input on nodes
     private void HandleTouchInput(Vector2 touchPosition)
     {
         Ray ray = Camera.main.ScreenPointToRay(new Vector3(touchPosition.x, touchPosition.y, 0));
         RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
-        
+
         if (hit.collider != null)
         {
             Node touchedNode = hit.collider.GetComponent<Node>();
@@ -140,7 +148,7 @@ public class CatController : PlayerBase
             }
         }
     }
-    
+
     // Set whether this cat is AI controlled
     public void SetAIControlled(bool aiControlled)
     {

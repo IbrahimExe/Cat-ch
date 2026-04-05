@@ -62,6 +62,8 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogError("InputManager not found in scene!");
         }
+
+        StartGame();
     }
 
     private void Update()
@@ -203,4 +205,6 @@ public class GameManager : MonoBehaviour
     {
         return catController;
     }
+
+
 }

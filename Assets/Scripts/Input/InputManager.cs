@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class InputManager : MonoBehaviour
 {
@@ -16,34 +17,45 @@ public class InputManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    // Check if pause key is pressed (ESC)
     public bool IsPausePressed()
     {
-        return Input.GetKeyDown(KeyCode.Escape);
+        Keyboard keyboard = Keyboard.current;
+        return keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
     }
 
     // Check if player pressed a confirm key
     public bool IsConfirmPressed()
     {
-        return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space);
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null) return false;
+
+        return keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame;
     }
 
     // Get mouse position in world space
     public Vector3 GetMouseWorldPosition()
     {
-        Vector3 mouseScreenPosition = Input.mousePosition;
+        Mouse mouse = Mouse.current;
+        if (mouse == null) return Vector3.zero;
+
+        Vector3 mouseScreenPosition = mouse.position.ReadValue();
         return Camera.main.ScreenToWorldPoint(mouseScreenPosition);
     }
 
     // Check if any directional input was pressed (WASD or Arrow keys)
     public bool IsAnyDirectionalInput()
     {
-        return Input.GetKeyDown(KeyCode.W) ||
-               Input.GetKeyDown(KeyCode.A) ||
-               Input.GetKeyDown(KeyCode.S) ||
-               Input.GetKeyDown(KeyCode.D) ||
-               Input.GetKeyDown(KeyCode.UpArrow) ||
-               Input.GetKeyDown(KeyCode.DownArrow) ||
-               Input.GetKeyDown(KeyCode.LeftArrow) ||
-               Input.GetKeyDown(KeyCode.RightArrow);
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null) return false;
+
+        return keyboard.wKey.wasPressedThisFrame ||
+               keyboard.aKey.wasPressedThisFrame ||
+               keyboard.sKey.wasPressedThisFrame ||
+               keyboard.dKey.wasPressedThisFrame ||
+               keyboard.upArrowKey.wasPressedThisFrame ||
+               keyboard.downArrowKey.wasPressedThisFrame ||
+               keyboard.leftArrowKey.wasPressedThisFrame ||
+               keyboard.rightArrowKey.wasPressedThisFrame;
     }
 }
