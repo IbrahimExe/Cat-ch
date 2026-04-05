@@ -12,13 +12,12 @@ public class MouseController : PlayerBase
 
         if (spriteRenderer != null)
         {
-            //spriteRenderer.color = Color.yellow;
+            spriteRenderer.color = Color.yellow;
         }
     }
 
     private void Update()
     {
-        // Only respond to input when it's the mouse's turn and game is playing
         if (!GameManager.Instance.IsMouseTurn || GameManager.Instance.GetGameState() != GameState.Playing)
         {
             return;
@@ -27,8 +26,6 @@ public class MouseController : PlayerBase
         HandleInput();
     }
 
-
-    // Handle keyboard and mouse input for the mouse player
     private void HandleInput()
     {
         Keyboard keyboard = Keyboard.current;
@@ -36,32 +33,19 @@ public class MouseController : PlayerBase
         if (keyboard == null)
             return;
 
-        // Keyboard input (WASD)
-        if (keyboard.wKey.wasPressedThisFrame)
+        // Check for any movement key pressed this frame
+        if (keyboard.wKey.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame ||
+            keyboard.sKey.wasPressedThisFrame || keyboard.dKey.wasPressedThisFrame)
         {
-            TryMoveInDirection(Vector2.up);
-        }
-        else if (keyboard.aKey.wasPressedThisFrame)
-        {
-            TryMoveInDirection(Vector2.left);
-        }
-        else if (keyboard.sKey.wasPressedThisFrame)
-        {
-            TryMoveInDirection(Vector2.down);
-        }
-        else if (keyboard.dKey.wasPressedThisFrame)
-        {
-            TryMoveInDirection(Vector2.right);
+            HandleMovementInput(keyboard);
         }
 
-        // Mouse click input; click on a node to move there
         Mouse mouse = Mouse.current;
         if (mouse != null && mouse.leftButton.wasPressedThisFrame)
         {
             HandleMouseClickInput();
         }
 
-        // Touch input
         Touchscreen touchscreen = Touchscreen.current;
         if (touchscreen != null && touchscreen.touches.Count > 0)
         {
@@ -73,10 +57,29 @@ public class MouseController : PlayerBase
         }
     }
 
-    // Try to move in a direction based on keyboard input
+    private void HandleMovementInput(Keyboard keyboard)
+    {
+        Vector2 direction = Vector2.zero;
+
+        // Check currently held keys to build a combined direction
+        if (keyboard.wKey.isPressed)
+            direction += Vector2.up;
+        if (keyboard.sKey.isPressed)
+            direction += Vector2.down;
+        if (keyboard.aKey.isPressed)
+            direction += Vector2.left;
+        if (keyboard.dKey.isPressed)
+            direction += Vector2.right;
+
+        if (direction != Vector2.zero)
+        {
+            TryMoveInDirection(direction.normalized);
+        }
+    }
+
     private void TryMoveInDirection(Vector2 direction)
     {
-        Node targetNode = FindNodeInDirection(direction);
+        Node targetNode = FindBestNodeInDirection(direction);
         if (targetNode != null && currentNode.IsConnectedTo(targetNode))
         {
             MoveToNode(targetNode);
@@ -84,21 +87,19 @@ public class MouseController : PlayerBase
         }
     }
 
-
-    // Find the closest connected node in a given direction
-    private Node FindNodeInDirection(Vector2 direction)
+    private Node FindBestNodeInDirection(Vector2 direction)
     {
         Node bestNode = null;
-        float bestDot = -1f;
+        float bestScore = -2f;
 
         foreach (Node connectedNode in currentNode.GetConnectedNodes())
         {
             Vector2 directionToNode = (connectedNode.GetPosition() - currentNode.GetPosition()).normalized;
-            float dot = Vector2.Dot(directionToNode, direction.normalized);
+            float dotProduct = Vector2.Dot(directionToNode, direction);
 
-            if (dot > bestDot)
+            if (dotProduct > bestScore)
             {
-                bestDot = dot;
+                bestScore = dotProduct;
                 bestNode = connectedNode;
             }
         }
@@ -106,7 +107,6 @@ public class MouseController : PlayerBase
         return bestNode;
     }
 
-    // Handle mouse click input on nodes
     private void HandleMouseClickInput()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -123,7 +123,6 @@ public class MouseController : PlayerBase
         }
     }
 
-    // Handle touch input on nodes
     private void HandleTouchInput(Vector2 touchPosition)
     {
         Ray ray = Camera.main.ScreenPointToRay(new Vector3(touchPosition.x, touchPosition.y, 0));

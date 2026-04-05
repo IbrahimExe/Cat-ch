@@ -17,19 +17,17 @@ public class CatController : PlayerBase
 
         if (spriteRenderer != null)
         {
-            //spriteRenderer.color = Color.red;
+            spriteRenderer.color = Color.red;
         }
     }
 
     private void Update()
     {
-        // If AI controlled, don't process player input
         if (isAIControlled)
         {
             return;
         }
 
-        // Only respond to input when it's the cat's turn and game is playing
         if (GameManager.Instance.IsMouseTurn || GameManager.Instance.GetGameState() != GameState.Playing)
         {
             return;
@@ -38,7 +36,6 @@ public class CatController : PlayerBase
         HandleInput();
     }
 
-    // Handle keyboard input for the cat player
     private void HandleInput()
     {
         Keyboard keyboard = Keyboard.current;
@@ -46,32 +43,19 @@ public class CatController : PlayerBase
         if (keyboard == null)
             return;
 
-        // Arrow key input
-        if (keyboard.upArrowKey.wasPressedThisFrame)
+        // Check for any arrow key pressed this frame
+        if (keyboard.upArrowKey.wasPressedThisFrame || keyboard.downArrowKey.wasPressedThisFrame ||
+            keyboard.leftArrowKey.wasPressedThisFrame || keyboard.rightArrowKey.wasPressedThisFrame)
         {
-            TryMoveInDirection(Vector2.up);
-        }
-        else if (keyboard.leftArrowKey.wasPressedThisFrame)
-        {
-            TryMoveInDirection(Vector2.left);
-        }
-        else if (keyboard.downArrowKey.wasPressedThisFrame)
-        {
-            TryMoveInDirection(Vector2.down);
-        }
-        else if (keyboard.rightArrowKey.wasPressedThisFrame)
-        {
-            TryMoveInDirection(Vector2.right);
+            HandleMovementInput(keyboard);
         }
 
-        // Mouse click input
         Mouse mouse = Mouse.current;
         if (mouse != null && mouse.leftButton.wasPressedThisFrame)
         {
             HandleMouseClickInput();
         }
 
-        // Touch input
         Touchscreen touchscreen = Touchscreen.current;
         if (touchscreen != null && touchscreen.touches.Count > 0)
         {
@@ -83,10 +67,29 @@ public class CatController : PlayerBase
         }
     }
 
-    // Try to move in a direction based on keyboard input
+    private void HandleMovementInput(Keyboard keyboard)
+    {
+        Vector2 direction = Vector2.zero;
+
+        // Check currently held keys to build a combined direction
+        if (keyboard.upArrowKey.isPressed)
+            direction += Vector2.up;
+        if (keyboard.downArrowKey.isPressed)
+            direction += Vector2.down;
+        if (keyboard.leftArrowKey.isPressed)
+            direction += Vector2.left;
+        if (keyboard.rightArrowKey.isPressed)
+            direction += Vector2.right;
+
+        if (direction != Vector2.zero)
+        {
+            TryMoveInDirection(direction.normalized);
+        }
+    }
+
     private void TryMoveInDirection(Vector2 direction)
     {
-        Node targetNode = FindNodeInDirection(direction);
+        Node targetNode = FindBestNodeInDirection(direction);
         if (targetNode != null && currentNode.IsConnectedTo(targetNode))
         {
             MoveToNode(targetNode);
@@ -94,20 +97,19 @@ public class CatController : PlayerBase
         }
     }
 
-    // Find the closest connected node in a given direction
-    private Node FindNodeInDirection(Vector2 direction)
+    private Node FindBestNodeInDirection(Vector2 direction)
     {
         Node bestNode = null;
-        float bestDot = -1f;
+        float bestScore = -2f;
 
         foreach (Node connectedNode in currentNode.GetConnectedNodes())
         {
             Vector2 directionToNode = (connectedNode.GetPosition() - currentNode.GetPosition()).normalized;
-            float dot = Vector2.Dot(directionToNode, direction.normalized);
+            float dotProduct = Vector2.Dot(directionToNode, direction);
 
-            if (dot > bestDot)
+            if (dotProduct > bestScore)
             {
-                bestDot = dot;
+                bestScore = dotProduct;
                 bestNode = connectedNode;
             }
         }
@@ -115,7 +117,6 @@ public class CatController : PlayerBase
         return bestNode;
     }
 
-    // Handle mouse click input on nodes
     private void HandleMouseClickInput()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -132,7 +133,6 @@ public class CatController : PlayerBase
         }
     }
 
-    // Handle touch input on nodes
     private void HandleTouchInput(Vector2 touchPosition)
     {
         Ray ray = Camera.main.ScreenPointToRay(new Vector3(touchPosition.x, touchPosition.y, 0));
@@ -149,7 +149,6 @@ public class CatController : PlayerBase
         }
     }
 
-    // Set whether this cat is AI controlled
     public void SetAIControlled(bool aiControlled)
     {
         isAIControlled = aiControlled;

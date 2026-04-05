@@ -1,8 +1,7 @@
 using UnityEngine;
 using System.Collections;
-using UnityEditor.Experimental.GraphView;
 
-public abstract class PlayerBase : MonoBehaviour
+public class PlayerBase : MonoBehaviour
 {
     [SerializeField]
     protected Node currentNode;
@@ -23,8 +22,6 @@ public abstract class PlayerBase : MonoBehaviour
         }
     }
 
-
-    // Initialize the player at a starting node
     public virtual void Initialize(Node startingNode)
     {
         if (startingNode == null)
@@ -37,7 +34,6 @@ public abstract class PlayerBase : MonoBehaviour
         transform.position = currentNode.GetPosition();
     }
 
-    // Attempt to move the player to a target node
     public virtual void MoveToNode(Node targetNode)
     {
         if (targetNode == null || isMoving)
@@ -54,7 +50,6 @@ public abstract class PlayerBase : MonoBehaviour
         StartCoroutine(SmoothMoveTo(targetNode));
     }
 
-    // Smooth animation from current node to target node
     protected virtual IEnumerator SmoothMoveTo(Node targetNode)
     {
         isMoving = true;
@@ -74,14 +69,11 @@ public abstract class PlayerBase : MonoBehaviour
         isMoving = false;
     }
 
-
-    // Get the current node the player is on
     public Node GetCurrentNode()
     {
         return currentNode;
     }
 
-    // Teleport player instantly to a node maybe for a respawn idk yet
     public void TeleportToNode(Node targetNode)
     {
         if (targetNode == null) return;

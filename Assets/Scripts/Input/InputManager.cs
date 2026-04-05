@@ -14,17 +14,14 @@ public class InputManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
     }
 
-    // Check if pause key is pressed (ESC)
     public bool IsPausePressed()
     {
         Keyboard keyboard = Keyboard.current;
         return keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
     }
 
-    // Check if player pressed a confirm key
     public bool IsConfirmPressed()
     {
         Keyboard keyboard = Keyboard.current;
@@ -33,7 +30,6 @@ public class InputManager : MonoBehaviour
         return keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame;
     }
 
-    // Get mouse position in world space
     public Vector3 GetMouseWorldPosition()
     {
         Mouse mouse = Mouse.current;
@@ -43,7 +39,6 @@ public class InputManager : MonoBehaviour
         return Camera.main.ScreenToWorldPoint(mouseScreenPosition);
     }
 
-    // Check if any directional input was pressed (WASD or Arrow keys)
     public bool IsAnyDirectionalInput()
     {
         Keyboard keyboard = Keyboard.current;
