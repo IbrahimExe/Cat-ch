@@ -156,6 +156,12 @@ public class GameManager : MonoBehaviour
 
         gameOver = true;
         currentGameState = GameState.GameOver;
+
+        // Reset input buffers to prevent delayed moves
+        if (mouseController != null)
+            mouseController.ResetInputBuffer();
+        if (catController != null)
+            catController.ResetInputBuffer();
     }
 
     private IEnumerator DelayedAIMove()

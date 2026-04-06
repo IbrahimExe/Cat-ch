@@ -4,6 +4,9 @@ using UnityEngine.InputSystem;
 public class MouseController : PlayerBase
 {
     private InputManager inputManager;
+    private float inputBufferDuration = 0.15f;
+    private float inputBufferTimer = 0f;
+    private bool isBufferingInput = false;
 
     protected override void Awake()
     {
@@ -28,24 +31,47 @@ public class MouseController : PlayerBase
 
     private void HandleInput()
     {
+        // Stop all input handling if game is not playing
+        if (GameManager.Instance.GetGameState() != GameState.Playing)
+        {
+            ResetInputBuffer();
+            return;
+        }
+
         Keyboard keyboard = Keyboard.current;
 
         if (keyboard == null)
             return;
 
-        // Check for any movement key pressed this frame
-        if (keyboard.wKey.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame ||
-            keyboard.sKey.wasPressedThisFrame || keyboard.dKey.wasPressedThisFrame)
+        // Start input buffer if any key is pressed
+        if (!isBufferingInput && (keyboard.wKey.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame ||
+            keyboard.sKey.wasPressedThisFrame || keyboard.dKey.wasPressedThisFrame))
         {
-            HandleMovementInput(keyboard);
+            isBufferingInput = true;
+            inputBufferTimer = 0f;
         }
 
+        // Update input buffer timer
+        if (isBufferingInput)
+        {
+            inputBufferTimer += Time.deltaTime;
+
+            // After buffer window closes, make the move
+            if (inputBufferTimer >= inputBufferDuration)
+            {
+                ExecuteMovement(keyboard);
+                isBufferingInput = false;
+            }
+        }
+
+        // Handle mouse click (bypasses buffer)
         Mouse mouse = Mouse.current;
         if (mouse != null && mouse.leftButton.wasPressedThisFrame)
         {
             HandleMouseClickInput();
         }
 
+        // Handle touch input
         Touchscreen touchscreen = Touchscreen.current;
         if (touchscreen != null && touchscreen.touches.Count > 0)
         {
@@ -57,11 +83,11 @@ public class MouseController : PlayerBase
         }
     }
 
-    private void HandleMovementInput(Keyboard keyboard)
+    private void ExecuteMovement(Keyboard keyboard)
     {
         Vector2 direction = Vector2.zero;
 
-        // Check currently held keys to build a combined direction
+        // Collect all currently held keys
         if (keyboard.wKey.isPressed)
             direction += Vector2.up;
         if (keyboard.sKey.isPressed)
@@ -71,10 +97,17 @@ public class MouseController : PlayerBase
         if (keyboard.dKey.isPressed)
             direction += Vector2.right;
 
+        // Only move if there's a direction input
         if (direction != Vector2.zero)
         {
             TryMoveInDirection(direction.normalized);
         }
+    }
+
+    public void ResetInputBuffer()
+    {
+        isBufferingInput = false;
+        inputBufferTimer = 0f;
     }
 
     private void TryMoveInDirection(Vector2 direction)
@@ -82,9 +115,22 @@ public class MouseController : PlayerBase
         Node targetNode = FindBestNodeInDirection(direction);
         if (targetNode != null && currentNode.IsConnectedTo(targetNode))
         {
-            MoveToNode(targetNode);
-            GameManager.Instance.EndTurn();
+            StartCoroutine(MoveAndEndTurn(targetNode));
         }
+    }
+
+    private System.Collections.IEnumerator MoveAndEndTurn(Node targetNode)
+    {
+        MoveToNode(targetNode);
+
+        // Wait for movement to complete
+        while (isMoving)
+        {
+            yield return null;
+        }
+
+        // Now end turn after movement is done
+        GameManager.Instance.EndTurn();
     }
 
     private Node FindBestNodeInDirection(Vector2 direction)
@@ -117,8 +163,7 @@ public class MouseController : PlayerBase
             Node clickedNode = hit.collider.GetComponent<Node>();
             if (clickedNode != null && currentNode.IsConnectedTo(clickedNode))
             {
-                MoveToNode(clickedNode);
-                GameManager.Instance.EndTurn();
+                StartCoroutine(MoveAndEndTurn(clickedNode));
             }
         }
     }
@@ -133,8 +178,7 @@ public class MouseController : PlayerBase
             Node touchedNode = hit.collider.GetComponent<Node>();
             if (touchedNode != null && currentNode.IsConnectedTo(touchedNode))
             {
-                MoveToNode(touchedNode);
-                GameManager.Instance.EndTurn();
+                StartCoroutine(MoveAndEndTurn(touchedNode));
             }
         }
     }
